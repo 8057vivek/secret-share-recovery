@@ -2,7 +2,7 @@
 const fs = require('fs');
 
 // Get filename from command line or default to input1.json
-const filename = process.argv[2] || 'input1.json';
+const filename = process.argv[2] || 'input2.json';
 const data = JSON.parse(fs.readFileSync(filename, 'utf-8'));
 
 // Step 1: Parse points
@@ -58,5 +58,47 @@ function lagrangeConstant(points) {
   else return secret.num + '/' + secret.den;
 }
 
-const secret = lagrangeConstant(points);
-console.log("Secret:", secret.toString()); 
+// Helper: Generate all combinations of k elements from arr
+function combinations(arr, k) {
+  const result = [];
+  function backtrack(start, comb) {
+    if (comb.length === k) {
+      result.push(comb.slice());
+      return;
+    }
+    for (let i = start; i < arr.length; i++) {
+      comb.push(arr[i]);
+      backtrack(i + 1, comb);
+      comb.pop();
+    }
+  }
+  backtrack(0, []);
+  return result;
+}
+
+// Main logic: try all combinations if n > k
+const n = data.keys.n;
+const k = data.keys.k;
+let secrets = {};
+let maxCount = 0;
+let mostCommonSecret = null;
+
+if (points.length > k) {
+  const combs = combinations(points, k);
+  for (const comb of combs) {
+    const secret = lagrangeConstant(comb).toString();
+    secrets[secret] = (secrets[secret] || 0) + 1;
+    if (secrets[secret] > maxCount) {
+      maxCount = secrets[secret];
+      mostCommonSecret = secret;
+    }
+  }
+  console.log("All secrets found (with counts):");
+  for (const [sec, count] of Object.entries(secrets)) {
+    console.log(`  Secret: ${sec} (found ${count} times)`);
+  }
+  console.log("\nMost common secret:", mostCommonSecret);
+} else {
+  const secret = lagrangeConstant(points);
+  console.log("Secret:", secret.toString());
+} 
